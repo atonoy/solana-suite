@@ -25,6 +25,7 @@ export type InputNftMetadata = {
 };
 
 export type MintOptions = {
+  updateAuthority: Pubkey;
   freezeAuthority: Pubkey;
   feePayer: Secret;
 };

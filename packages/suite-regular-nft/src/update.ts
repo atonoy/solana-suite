@@ -5,7 +5,6 @@ import {
 } from '@solana/web3.js';
 
 import {
-  createApproveInstruction,
   createAssociatedTokenAccountInstruction,
   createInitializeMintInstruction,
   createMintToCheckedInstruction,
@@ -24,17 +23,19 @@ import { InputNftMetadata, MintOptions } from '~/types/regular-nft';
 import { Converter } from '~/converter';
 import { Validator } from '~/validator';
 import { Account } from '~/account';
+import { RegularNft as Mint } from './mint';
 
 import {
   createCreateMasterEditionV3Instruction,
   createCreateMetadataAccountV3Instruction,
   createSignMetadataInstruction,
-  createVerifySizedCollectionItemInstruction,
+  createUpdateMetadataAccountV2Instruction,
   DataV2,
+  UpdateMetadataAccountV2InstructionArgs,
+  UpdateMetadataAccountV2Struct,
 } from '@metaplex-foundation/mpl-token-metadata';
 
 export namespace RegularNft {
-  const NFT_AMOUNT = 1;
   const DEFAULT_STORAGE_TYPE = 'nftStorage';
 
   //@internal
@@ -47,45 +48,7 @@ export namespace RegularNft {
   };
 
   //@internal
-  export const createDeleagate = (
-    mint: PublicKey,
-    owner: PublicKey,
-    delegateAuthority: PublicKey,
-  ): TransactionInstruction => {
-    const tokenAccount = getAssociatedTokenAddressSync(mint, owner);
-
-    return createApproveInstruction(
-      tokenAccount,
-      delegateAuthority,
-      owner,
-      NFT_AMOUNT,
-    );
-  };
-
-  //@internal
-  export const createVerifySizedCollection = (
-    collectionChild: PublicKey,
-    collectionParent: PublicKey,
-    feePayer: PublicKey,
-  ) => {
-    const collectionMetadata = Account.Pda.getMetadata(
-      collectionParent.toString(),
-    );
-    const collectionMasterEditionAccount = Account.Pda.getMasterEdition(
-      collectionParent.toString(),
-    );
-    return createVerifySizedCollectionItemInstruction({
-      collection: collectionMetadata,
-      collectionMasterEditionAccount: collectionMasterEditionAccount,
-      collectionMint: collectionParent,
-      metadata: Account.Pda.getMetadata(collectionChild.toString()),
-      payer: feePayer,
-      collectionAuthority: feePayer,
-    });
-  };
-
-  //@internal
-  export const createMint = async (
+  export const updateMint = async (
     mint: PublicKey,
     owner: PublicKey,
     nftMetadata: DataV2,
@@ -98,66 +61,78 @@ export namespace RegularNft {
     const masterEditionPubkey = Account.Pda.getMasterEdition(mint.toString());
     const connection = Node.getConnection();
     const instructions = [];
+    const auhority = updateAuthority ? updateAuthority : owner;
+    const metadataAccount = { metadata: mint, updateAuthority: auhority };
 
+    // instructions.push(
+    //   SystemProgram.createAccount({
+    //     fromPubkey: feePayer,
+    //     newAccountPubkey: mint,
+    //     lamports: await getMinimumBalanceForRentExemptMint(connection),
+    //     space: MINT_SIZE,
+    //     programId: TOKEN_PROGRAM_ID,
+    //   }),
+    // );
+    //
+    // instructions.push(createInitializeMintInstruction(mint, 0, owner, owner));
+    //
+    // instructions.push(
+    //   createAssociatedTokenAccountInstruction(feePayer, ata, owner, mint),
+    // );
+    //
+    // instructions.push(createMintToCheckedInstruction(mint, ata, owner, 1, 0));
+    //
+    // instructions.push(
+    //   createCreateMetadataAccountV3Instruction(
+    //     {
+    //       metadata: tokenMetadataPubkey,
+    //       mint,
+    //       mintAuthority: owner,
+    //       payer: feePayer,
+    //       updateAuthority: owner,
+    //     },
+    //     {
+    //       createMetadataAccountArgsV3: {
+    //         data: nftMetadata,
+    //         isMutable,
+    //         collectionDetails: null,
+    //       },
+    //     },
+    //   ),
+    // );
+    //
+    // instructions.push(
+    //   createCreateMasterEditionV3Instruction(
+    //     {
+    //       edition: masterEditionPubkey,
+    //       mint,
+    //       updateAuthority: owner,
+    //       mintAuthority: owner,
+    //       payer: feePayer,
+    //       metadata: tokenMetadataPubkey,
+    //     },
+    //     {
+    //       createMasterEditionArgs: {
+    //         maxSupply: 0,
+    //       },
+    //     },
+    //   ),
+    // );
     instructions.push(
-      SystemProgram.createAccount({
-        fromPubkey: feePayer,
-        newAccountPubkey: mint,
-        lamports: await getMinimumBalanceForRentExemptMint(connection),
-        space: MINT_SIZE,
-        programId: TOKEN_PROGRAM_ID,
+      createUpdateMetadataAccountV2Instruction(metadataAccount, {
+        updateMetadataAccountArgsV2: {
+          data: nftMetadata,
+          updateAuthority: auhority,
+          isMutable,
+          primarySaleHappened: null,
+        },
       }),
-    );
-
-    instructions.push(createInitializeMintInstruction(mint, 0, owner, owner));
-
-    instructions.push(
-      createAssociatedTokenAccountInstruction(feePayer, ata, owner, mint),
-    );
-
-    instructions.push(createMintToCheckedInstruction(mint, ata, owner, 1, 0));
-
-    instructions.push(
-      createCreateMetadataAccountV3Instruction(
-        {
-          metadata: tokenMetadataPubkey,
-          mint,
-          mintAuthority: owner,
-          payer: feePayer,
-          updateAuthority,
-        },
-        {
-          createMetadataAccountArgsV3: {
-            data: nftMetadata,
-            isMutable,
-            collectionDetails: null,
-          },
-        },
-      ),
-    );
-
-    instructions.push(
-      createCreateMasterEditionV3Instruction(
-        {
-          edition: masterEditionPubkey,
-          mint,
-          updateAuthority,
-          mintAuthority: owner,
-          payer: feePayer,
-          metadata: tokenMetadataPubkey,
-        },
-        {
-          createMasterEditionArgs: {
-            maxSupply: 0,
-          },
-        },
-      ),
     );
     return instructions;
   };
 
   /**
-   * Upload content and NFT mint
+   * Update NFT metadata
    *
    * @param {Secret} owner         // owner's Secret
    * @param {InputNftMetadata} input
@@ -180,8 +155,9 @@ export namespace RegularNft {
    * @param {Partial<MintOptions>} options         // options
    * @return Promise<Result<MintInstruction, Error>>
    */
-  export const mint = async (
+  export const update = async (
     owner: Secret,
+    mint: Pubkey,
     input: InputNftMetadata,
     options: Partial<MintOptions> = {},
   ): Promise<Result<MintStructure, Error>> => {
@@ -190,7 +166,7 @@ export namespace RegularNft {
       if (valid.isErr) {
         throw valid.error;
       }
-      const { feePayer, freezeAuthority } = options;
+      const { feePayer } = options;
       const payer = feePayer ? feePayer : owner;
       const authority = options.updateAuthority
         ? options.updateAuthority
@@ -266,9 +242,8 @@ export namespace RegularNft {
       debugLog('# input: ', input);
       debugLog('# datav2: ', datav2);
 
-      const mint = Account.Keypair.create();
-
-      const instructions = await createMint(
+      // main instruction
+      const instructions = await updateMint(
         mint.toPublicKey(),
         ownerPublicKey,
         datav2,
@@ -277,21 +252,10 @@ export namespace RegularNft {
         isMutable,
       );
 
-      // freezeAuthority
-      if (freezeAuthority) {
-        instructions.push(
-          createDeleagate(
-            mint.toPublicKey(),
-            ownerPublicKey,
-            freezeAuthority.toPublicKey(),
-          ),
-        );
-      }
-
       // collection ---
       if (input.collection) {
         instructions.push(
-          createVerifySizedCollection(
+          Mint.createVerifySizedCollection(
             mint.toPublicKey(),
             input.collection.toPublicKey(),
             payer.toKeypair().publicKey,
@@ -299,9 +263,9 @@ export namespace RegularNft {
         );
       }
 
-      const keypairs = [owner.toKeypair(), mint.toKeypair()];
+      // TODO: added Update authority
+      const keypairs = [owner.toKeypair()];
 
-      // creator ---
       if (input.creators) {
         input.creators.forEach((creator) => {
           if (Account.Keypair.isSecret(creator.secret)) {
@@ -317,7 +281,7 @@ export namespace RegularNft {
         instructions,
         keypairs,
         payer.toKeypair(),
-        mint.pubkey,
+        mint,
       );
     });
   };
