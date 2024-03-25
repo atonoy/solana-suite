@@ -10,11 +10,9 @@ import { debugLog } from '~/suite-utils';
 import { TransactionBuilder as ComputeUnit } from './compute-unit';
 
 export namespace TransactionBuilder {
-  export namespace Retry {
+  export namespace RetryPriorityFee {
     const RETRY_MULTIPLIED = 1.6;
-    export const isComputeBudgetError = (
-      error: unknown,
-    ): error is SendTransactionError => {
+    export const isError = (error: unknown): error is SendTransactionError => {
       if (typeof error === 'object' && error instanceof SendTransactionError) {
         if (error.logs?.some((item) => item.includes('ComputeBudget'))) {
           return true;

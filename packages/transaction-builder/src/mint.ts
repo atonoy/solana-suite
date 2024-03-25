@@ -11,7 +11,7 @@ import { Constants, debugLog, Result, Try } from '~/suite-utils';
 import { Node } from '~/node';
 import { TransactionBuilder as ComputeUnit } from './compute-unit';
 import { TransactionBuilder as PriorityFee } from './priority-fee';
-import { TransactionBuilder as Retry } from './retry';
+import { TransactionBuilder as RetryComputeUnit } from './retry-compute-unit';
 import { MintStructure, SubmitOptions } from '~/types/transaction-builder';
 import { Pubkey } from '~/types/account';
 
@@ -88,8 +88,8 @@ export namespace TransactionBuilder {
             confirmOptions,
           );
         } catch (error) {
-          if (Retry.Retry.isComputeBudgetError(error)) {
-            return await Retry.Retry.submit(
+          if (RetryComputeUnit.RetryComputeUnit.isError(error)) {
+            return await RetryComputeUnit.RetryComputeUnit.submit(
               transaction,
               finalSigners,
               confirmOptions,

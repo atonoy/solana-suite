@@ -11,7 +11,7 @@ import {
   PartialSignStructure,
   SubmitOptions,
 } from '~/types/transaction-builder';
-import { TransactionBuilder as Retry } from './retry';
+import { TransactionBuilder as RetryComputeUnit } from './retry-compute-unit';
 
 export namespace TransactionBuilder {
   export class PartialSign implements PartialSignStructure {
@@ -49,8 +49,8 @@ export namespace TransactionBuilder {
             confirmOptions,
           );
         } catch (error) {
-          if (Retry.Retry.isComputeBudgetError(error)) {
-            return await Retry.Retry.submitForPartialSign(
+          if (RetryComputeUnit.RetryComputeUnit.isError(error)) {
+            return await RetryComputeUnit.RetryComputeUnit.submitForPartialSign(
               transaction,
               options.feePayer.toKeypair(),
               confirmOptions,

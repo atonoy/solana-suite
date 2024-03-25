@@ -303,8 +303,8 @@ declare namespace TransactionBuilder$2 {
 }
 
 declare namespace TransactionBuilder$1 {
-    namespace Retry {
-        const isComputeBudgetError: (error: unknown) => error is SendTransactionError;
+    namespace RetryComputeUnit {
+        const isError: (error: unknown) => error is SendTransactionError;
         const submit: (transaction: Transaction, finalSigners: Keypair[], confirmOptions: ConfirmOptions) => Promise<string>;
         const submitForPartialSign: (transaction: Transaction, finalSigner: Keypair, confirmOptions: ConfirmOptions) => Promise<string>;
     }
@@ -340,7 +340,7 @@ type ExplorerOptions = {
 };
 
 declare const TransactionBuilder: {
-    Retry: typeof TransactionBuilder$1.Retry;
+    RetryComputeUnit: typeof TransactionBuilder$1.RetryComputeUnit;
     PriorityFee: typeof TransactionBuilder$2.PriorityFee;
     PartialSign: typeof TransactionBuilder$3.PartialSign;
     Mint: typeof TransactionBuilder$4.Mint;

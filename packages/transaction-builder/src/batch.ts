@@ -9,7 +9,7 @@ import { Node } from '~/node';
 import { Constants, Result, Try } from '~/suite-utils';
 import { TransactionBuilder as PriorityFee } from './priority-fee';
 import { TransactionBuilder as ComputeUnit } from './compute-unit';
-import { TransactionBuilder as Retry } from './retry';
+import { TransactionBuilder as RetryComputeUnit } from './retry-compute-unit';
 import { BatchSubmitOptions } from '~/types/transaction-builder';
 
 export namespace TransactionBuilder {
@@ -84,8 +84,8 @@ export namespace TransactionBuilder {
             confirmOptions,
           );
         } catch (error) {
-          if (Retry.Retry.isComputeBudgetError(error)) {
-            return await Retry.Retry.submit(
+          if (RetryComputeUnit.RetryComputeUnit.isError(error)) {
+            return await RetryComputeUnit.RetryComputeUnit.submit(
               transaction,
               finalSigners,
               confirmOptions,

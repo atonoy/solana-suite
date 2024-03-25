@@ -12,7 +12,7 @@ import { Constants, Result, Try } from '~/suite-utils';
 import { CommonStructure, SubmitOptions } from '~/types/transaction-builder';
 import { TransactionBuilder as PriorityFee } from './priority-fee';
 import { TransactionBuilder as ComputeUnit } from './compute-unit';
-import { TransactionBuilder as Retry } from './retry';
+import { TransactionBuilder as RetryComputeUnit } from './retry-compute-unit';
 
 export namespace TransactionBuilder {
   export class Common<T = undefined> implements CommonStructure<T> {
@@ -84,8 +84,8 @@ export namespace TransactionBuilder {
             confirmOptions,
           );
         } catch (error) {
-          if (Retry.Retry.isComputeBudgetError(error)) {
-            return await Retry.Retry.submit(
+          if (RetryComputeUnit.RetryComputeUnit.isError(error)) {
+            return await RetryComputeUnit.RetryComputeUnit.submit(
               transaction,
               finalSigners,
               confirmOptions,

@@ -5,7 +5,7 @@ import { TransactionBuilder as Mint } from './mint';
 import { TransactionBuilder as PartialSign } from './partial-sign';
 import { TransactionBuilder as PriorityFee } from './priority-fee';
 import { TransactionBuilder as CalculateTxsize } from './calculate-txsize';
-import { TransactionBuilder as Retry } from './retry';
+import { TransactionBuilder as RetryComputeUnit } from './retry-compute-unit';
 import '~/types/global';
 import '~/global';
 
@@ -17,5 +17,5 @@ export const TransactionBuilder = {
   ...Mint,
   ...PartialSign,
   ...PriorityFee,
-  ...Retry,
+  ...RetryComputeUnit,
 };
