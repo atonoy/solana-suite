@@ -44,7 +44,7 @@ test('Connect devnet for localhost by default no parameter', (t) => {
 test('Connect devnet and modified commitment', (t) => {
   Node.changeConnection({
     cluster: Constants.Cluster.dev,
-    commitment: 'processed',
+    commitment: 'confirmed',
   });
   const res = Node.getConnection();
   t.not(res, '');
@@ -106,7 +106,7 @@ test('Change commitment destination, check singleton object', (t) => {
   const res = Node.getConnection().commitment;
   Node.changeConnection({
     cluster: Constants.Cluster.prd,
-    commitment: 'processed',
+    commitment: 'confirmed',
   });
   const res2nd = Node.getConnection().commitment;
   t.not(res, res2nd);
